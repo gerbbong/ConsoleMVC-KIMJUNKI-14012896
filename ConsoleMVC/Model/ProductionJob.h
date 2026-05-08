@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include <string>
 #include <chrono>
 #include <algorithm>
@@ -32,7 +32,7 @@ struct ProductionJob {
     int getProducedSoFar() const {
         if (!hasStarted || avgProductionTime <= 0.0) return 0;
         int produced = static_cast<int>(getElapsedSeconds() / avgProductionTime);
-        return std::min(produced, actualQuantity);
+        return produced < actualQuantity ? produced : actualQuantity;
     }
 
     double getRemainingSeconds() const {

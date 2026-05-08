@@ -1,4 +1,4 @@
-#include "ProductionLine.h"
+﻿#include "ProductionLine.h"
 
 static void startJob(ProductionJob& job) {
     job.startTime  = std::chrono::steady_clock::now();
