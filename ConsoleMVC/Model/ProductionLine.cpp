@@ -1,10 +1,17 @@
 #include "ProductionLine.h"
 
+static void startJob(ProductionJob& job) {
+    job.startTime  = std::chrono::steady_clock::now();
+    job.hasStarted = true;
+}
+
 void ProductionLine::enqueue(ProductionJob job) {
-    if (!current_.has_value())
+    if (!current_.has_value()) {
+        startJob(job);
         current_ = std::move(job);
-    else
+    } else {
         queue_.push_back(std::move(job));
+    }
 }
 
 bool ProductionLine::hasCurrentJob() const {
@@ -23,6 +30,7 @@ void ProductionLine::completeCurrentJob() {
     if (!queue_.empty()) {
         current_ = std::move(queue_.front());
         queue_.pop_front();
+        startJob(current_.value());
     } else {
         current_.reset();
     }

@@ -1,4 +1,4 @@
-﻿#include "OrderController.h"
+#include "OrderController.h"
 #include <cmath>
 
 OrderController::OrderController(OrderRepository& orderRepo, SampleRepository& sampleRepo,
@@ -40,18 +40,19 @@ bool OrderController::approveOrder(int orderId) {
     }
 
     if (sample->stock >= order->quantity) {
-        // 재고 충분 → 즉시 CONFIRMED
         sample->stock -= order->quantity;
         order->status = OrderStatus::CONFIRMED;
         lastMessage_ = "재고 충분. 즉시 CONFIRMED 처리되었습니다.";
     } else {
-        // 재고 부족 → 생산라인 등록
         int shortage = order->quantity - sample->stock;
         int actualQty = static_cast<int>(
             std::ceil(static_cast<double>(shortage) / (sample->yield * 0.9)));
         double totalTime = sample->avgProductionTime * actualQty;
 
-        productionLine_.enqueue(ProductionJob(orderId, sample->id, shortage, actualQty, totalTime));
+        // avgProductionTime(min/ea)을 콘솔에서 sec/ea로 사용
+        productionLine_.enqueue(
+            ProductionJob(orderId, sample->id, shortage, actualQty,
+                          totalTime, sample->avgProductionTime));
         order->status = OrderStatus::PRODUCING;
         lastMessage_ = "재고 부족. 생산라인에 등록되었습니다. (PRODUCING)";
     }

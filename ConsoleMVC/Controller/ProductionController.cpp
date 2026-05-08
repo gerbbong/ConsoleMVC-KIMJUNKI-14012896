@@ -1,45 +1,42 @@
-﻿#include "ProductionController.h"
+#include "ProductionController.h"
 
 ProductionController::ProductionController(ProductionLine& line, OrderRepository& orderRepo,
                                            SampleRepository& sampleRepo)
     : line_(line), orderRepo_(orderRepo), sampleRepo_(sampleRepo) {}
 
+void ProductionController::update() {
+    // 완료된 작업을 순서대로 처리 (연속 완료 케이스 포함)
+    while (line_.hasCurrentJob()) {
+        ProductionJob* job = line_.getCurrentJob();
+        if (!job->isComplete()) break;
+        finishJob(*job);
+        line_.completeCurrentJob();
+    }
+}
+
+void ProductionController::finishJob(ProductionJob& job) {
+    Order* order = orderRepo_.findById(job.orderId);
+    Sample* sample = sampleRepo_.findById(job.sampleId);
+    if (order && sample) {
+        sample->stock += job.actualQuantity;
+        sample->stock -= order->quantity;
+        if (sample->stock < 0) sample->stock = 0;
+        order->status = OrderStatus::CONFIRMED;
+    }
+}
+
 bool ProductionController::hasCurrentJob() const {
     return line_.hasCurrentJob();
 }
 
-ProductionJob* ProductionController::getCurrentJob() {
-    return line_.getCurrentJob();
+const ProductionJob* ProductionController::getCurrentJob() const {
+    return const_cast<ProductionLine&>(line_).getCurrentJob();
 }
 
 const std::deque<ProductionJob>& ProductionController::getQueue() const {
     return line_.getQueue();
 }
 
-bool ProductionController::completeCurrentJob() {
-    ProductionJob* job = line_.getCurrentJob();
-    if (!job) {
-        lastMessage_ = "현재 생산 중인 작업이 없습니다.";
-        return false;
-    }
-
-    Order* order = orderRepo_.findById(job->orderId);
-    Sample* sample = sampleRepo_.findById(job->sampleId);
-
-    if (order && sample) {
-        // 생산된 수량을 재고에 추가 후 주문 수량 차감
-        // 잔여재고 = actualQuantity - shortage (수율 고려 추가분)
-        sample->stock += job->actualQuantity;
-        sample->stock -= order->quantity;
-        if (sample->stock < 0) sample->stock = 0;
-        order->status = OrderStatus::CONFIRMED;
-        lastMessage_ = "생산 완료. 주문이 CONFIRMED 상태로 변경되었습니다.";
-    }
-
-    line_.completeCurrentJob();
-    return true;
-}
-
-std::string ProductionController::getLastMessage() const {
-    return lastMessage_;
+int ProductionController::getQueueSize() const {
+    return static_cast<int>(line_.getQueue().size());
 }

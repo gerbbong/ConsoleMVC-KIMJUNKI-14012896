@@ -9,14 +9,19 @@ class ProductionController {
 public:
     ProductionController(ProductionLine& line, OrderRepository& orderRepo,
                          SampleRepository& sampleRepo);
+
+    // 경과 시간을 확인해 완료된 작업을 자동 처리
+    void update();
+
     bool hasCurrentJob() const;
-    ProductionJob* getCurrentJob();
+    const ProductionJob* getCurrentJob() const;
     const std::deque<ProductionJob>& getQueue() const;
-    bool completeCurrentJob();
-    std::string getLastMessage() const;
+    int getQueueSize() const;
+
 private:
+    void finishJob(ProductionJob& job);
+
     ProductionLine& line_;
     OrderRepository& orderRepo_;
     SampleRepository& sampleRepo_;
-    std::string lastMessage_;
 };

@@ -1,4 +1,4 @@
-﻿#include "MonitorController.h"
+#include "MonitorController.h"
 
 MonitorController::MonitorController(OrderRepository& orderRepo, SampleRepository& sampleRepo)
     : orderRepo_(orderRepo), sampleRepo_(sampleRepo) {}
@@ -9,7 +9,6 @@ std::map<OrderStatus, int> MonitorController::getOrderCountByStatus() {
     counts[OrderStatus::PRODUCING] = 0;
     counts[OrderStatus::CONFIRMED] = 0;
     counts[OrderStatus::RELEASE]   = 0;
-
     for (const auto& o : orderRepo_.getAll()) {
         if (o.status != OrderStatus::REJECTED)
             counts[o.status]++;
@@ -35,18 +34,30 @@ std::vector<StockStatus> MonitorController::getStockStatusList() {
                 order->status == OrderStatus::PRODUCING)
                 pendingQty += order->quantity;
         }
-
         StockStatus ss;
         ss.sampleId   = sample.id;
         ss.sampleName = sample.name;
         ss.stock      = sample.stock;
         ss.pendingQty = pendingQty;
-
-        if (sample.stock == 0)              ss.label = "고갈";
+        if (sample.stock == 0)               ss.label = "고갈";
         else if (sample.stock <= pendingQty) ss.label = "부족";
-        else                                 ss.label = "여유";
-
+        else                                  ss.label = "여유";
         result.push_back(ss);
     }
     return result;
+}
+
+int MonitorController::getTotalSampleCount() const {
+    return static_cast<int>(const_cast<SampleRepository&>(sampleRepo_).getAll().size());
+}
+
+int MonitorController::getTotalStock() const {
+    int total = 0;
+    for (const auto& s : const_cast<SampleRepository&>(sampleRepo_).getAll())
+        total += s.stock;
+    return total;
+}
+
+int MonitorController::getTotalOrderCount() const {
+    return static_cast<int>(const_cast<OrderRepository&>(orderRepo_).getAll().size());
 }

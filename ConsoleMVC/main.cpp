@@ -1,4 +1,4 @@
-﻿#include <windows.h>
+#include <windows.h>
 #include "Model/SampleRepository.h"
 #include "Model/OrderRepository.h"
 #include "Model/ProductionLine.h"
@@ -18,19 +18,19 @@ int main() {
     SetConsoleOutputCP(CP_UTF8);
     SetConsoleCP(CP_UTF8);
 
-    // Model (데이터 저장소)
+    // Model
     SampleRepository sampleRepo;
     OrderRepository  orderRepo;
     ProductionLine   productionLine;
 
-    // Controller (비즈니스 로직)
-    SampleController    sampleCtrl(sampleRepo);
-    OrderController     orderCtrl(orderRepo, sampleRepo, productionLine);
-    MonitorController   monitorCtrl(orderRepo, sampleRepo);
+    // Controller
+    SampleController     sampleCtrl(sampleRepo);
+    OrderController      orderCtrl(orderRepo, sampleRepo, productionLine);
+    MonitorController    monitorCtrl(orderRepo, sampleRepo);
     ProductionController productionCtrl(productionLine, orderRepo, sampleRepo);
-    ReleaseController   releaseCtrl(orderRepo, sampleRepo);
+    ReleaseController    releaseCtrl(orderRepo, sampleRepo);
 
-    // View (화면 출력 및 입력)
+    // View
     SampleView     sampleView(sampleCtrl);
     OrderView      orderView(orderCtrl);
     MonitorView    monitorView(monitorCtrl);
@@ -38,7 +38,8 @@ int main() {
     ReleaseView    releaseView(releaseCtrl);
 
     MainView mainView(sampleView, orderView, monitorView,
-                      productionView, releaseView, monitorCtrl);
+                      productionView, releaseView,
+                      monitorCtrl, productionCtrl);
     mainView.run();
 
     return 0;

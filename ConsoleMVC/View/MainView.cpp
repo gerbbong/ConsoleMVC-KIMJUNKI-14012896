@@ -1,15 +1,32 @@
-﻿#include "MainView.h"
+#include "MainView.h"
 #include "ConsoleHelper.h"
 #include <iostream>
 #include <iomanip>
+#include <chrono>
+#include <ctime>
+
+namespace {
+    std::string currentTimeStr() {
+        auto now = std::chrono::system_clock::now();
+        std::time_t t = std::chrono::system_clock::to_time_t(now);
+        std::tm tm{};
+        localtime_s(&tm, &t);
+        char buf[32];
+        std::strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", &tm);
+        return buf;
+    }
+}
 
 MainView::MainView(SampleView& sv, OrderView& ov, MonitorView& mv,
-                   ProductionView& pv, ReleaseView& rv, MonitorController& mc)
+                   ProductionView& pv, ReleaseView& rv,
+                   MonitorController& mc, ProductionController& pc)
     : sampleView_(sv), orderView_(ov), monitorView_(mv),
-      productionView_(pv), releaseView_(rv), monitorCtrl_(mc) {}
+      productionView_(pv), releaseView_(rv),
+      monitorCtrl_(mc), productionCtrl_(pc) {}
 
 void MainView::run() {
     while (true) {
+        productionCtrl_.update(); // 생산 완료 자동 처리
         showMenu();
         int choice = Console::readInt("선택: ");
         switch (choice) {
@@ -32,33 +49,28 @@ void MainView::showMenu() {
     Console::clearScreen();
     Console::printTitle("반도체 시료 생산 주문 관리 시스템");
 
-    // 요약 정보
-    auto counts    = monitorCtrl_.getOrderCountByStatus();
-    auto stockList = monitorCtrl_.getStockStatusList();
+    // ── 현황 요약 ───────────────────────────────────
+    int producing = productionCtrl_.hasCurrentJob() ? 1 : 0;
+    int waiting   = productionCtrl_.getQueueSize();
 
-    std::cout << "\n[시스템 현황 요약]\n";
-    Console::printLine(40);
-    std::cout << "  주문 접수(RESERVED)  : " << counts[OrderStatus::RESERVED]  << " 건\n";
-    std::cout << "  생산 중  (PRODUCING) : " << counts[OrderStatus::PRODUCING] << " 건\n";
-    std::cout << "  출고 대기(CONFIRMED) : " << counts[OrderStatus::CONFIRMED] << " 건\n";
-    std::cout << "  출고 완료(RELEASE)   : " << counts[OrderStatus::RELEASE]   << " 건\n";
+    std::cout << "\n[현황]\n";
+    Console::printLine(45);
+    std::cout << std::left
+              << "  현재 시각     : " << currentTimeStr() << '\n'
+              << "  등록 시료     : " << monitorCtrl_.getTotalSampleCount() << " 종\n"
+              << "  총 재고       : " << monitorCtrl_.getTotalStock()       << " ea\n"
+              << "  전체 주문     : " << monitorCtrl_.getTotalOrderCount()  << " 건\n"
+              << "  생산 라인     : " << producing << "건 생산중, "
+                                      << waiting   << "건 대기중\n";
 
-    if (!stockList.empty()) {
-        std::cout << "\n[재고 요약]\n";
-        Console::printLine(40);
-        for (const auto& ss : stockList)
-            std::cout << "  " << std::left << std::setw(20) << ss.sampleName
-                      << " 재고: " << std::setw(5) << ss.stock
-                      << " [" << ss.label << "]\n";
-    }
-
+    // ── 메뉴 ────────────────────────────────────────
     std::cout << '\n';
-    Console::printLine();
-    std::cout << "  1. 시료 관리\n";
-    std::cout << "  2. 주문 (접수 / 승인 / 거절)\n";
-    std::cout << "  3. 모니터링\n";
-    std::cout << "  4. 출고 처리\n";
-    std::cout << "  5. 생산 라인\n";
-    std::cout << "  0. 종료\n";
-    Console::printLine();
+    Console::printLine(45);
+    std::cout << "  1. 시료 관리\n"
+              << "  2. 주문 (접수 / 승인 / 거절)\n"
+              << "  3. 모니터링\n"
+              << "  4. 출고 처리\n"
+              << "  5. 생산 라인\n"
+              << "  0. 종료\n";
+    Console::printLine(45);
 }
